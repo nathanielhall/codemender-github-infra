@@ -1,0 +1,44 @@
+name: Authenticate to Google Cloud (WIF Demo)
+
+on:
+  # Allows the workflow to be manually triggered from the GitHub Actions UI
+  workflow_dispatch: 
+
+jobs:
+  demo-gcp-auth:
+    runs-on: ubuntu-22.04 
+
+    # CRITICAL: These permissions are strictly required for Workload Identity Federation.
+    # 'id-token: write' allows GitHub to generate the OIDC token needed by Google Cloud.
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 1. Authenticate to Google Cloud securely using WIF
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: '${{ secrets.WIF_PROVIDER }}'
+          service_account: '${{ secrets.WIF_SERVICE_ACCOUNT }}'
+
+      # 2. Set up the gcloud CLI
+      # This step makes the `gcloud` command available for subsequent steps.
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # 3. Verify Authentication
+      # A simple test to prove the runner has successfully impersonated the GCP Service Account.
+      - name: Verify GCP Authentication
+        run: |
+          echo "✅ Successfully authenticated to Google Cloud!"
+          echo "Active authenticated accounts:"
+          gcloud auth list
+          
+          # Example of how a customer might expand this workflow:
+          # gcloud compute instances list --project="my-gcp-project-id"
+          # gcloud run deploy my-service --image="gcr.io/my-project/my-image"
