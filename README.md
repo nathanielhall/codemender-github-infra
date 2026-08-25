@@ -18,14 +18,13 @@ Ensure your target repository is permitted to execute workflows and manage Pull 
 *   **Actions permissions:** Enable "Allow all actions and reusable workflows."
 *   **Workflow permissions:** Enable "Read and write permissions" to allow ChatOps workflows to generate and update PRs.
 
-
 ## Example Workflows
-This repository includes a curated list of reusable GitHub Actions templates, ranging from basic vulnerability scanning to advanced ChatOps remediation and bulk fixes. 
+This repository includes a list of GitHub Actions examples, ranging from basic vulnerability scanning to advanced ChatOps remediation and bulk fixes. 
 
-For a complete list of available templates, their specific triggers, and usage instructions, please see the **[Example Workflows Documentation](./example-workflows/README.md)**.
+For a complete list see the **[Example Workflows Documentation](./example-workflows/README.md)**.
 
 ## Current Limitations & Optimization Paths
-These starter workflows are designed for rapid onboarding and dynamic execution, which introduces certain constraints:
+These examples introduce certain constraints:
 *   **Execution Overhead:** The CLI is currently installed dynamically on each workflow run. This creates latency and is inefficient when scaling against massive repositories.
-*   **Containerization Constraints:** Transitioning to a pre-built container image would optimize runtime performance. However, this future improvement requires careful architectural planning to mitigate nested container execution issues within GitHub Actions.
+*   **Containerization Constraints:** Transitioning to a pre-built container image would optimize runtime performance. NOTE: Must plan to mitigate nested container execution issues. 
 
