@@ -1,106 +1,34 @@
-# Google Cloud Workload Identity Federation for GitHub Actions
-
-This Terraform project provisions Google Cloud Workload Identity Federation (WIF) infrastructure to enable keyless authentication for GitHub Actions workflows interacting with GCP services (e.g., CodeMender backend APIs on Vertex AI).
+# CodeMender CLI GitHub Infrastructure
 
 ## Overview
+This repository contains the Terraform configurations required to provision Google Cloud Workload Identity Federation (WIF). Its primary purpose is to establish keyless, secure authentication between GitHub Actions and Google Cloud, enabling the automated execution of the CodeMender CLI within target repositories. 
 
-Keyless authentication via Workload Identity Federation eliminates the need to store long-lived service account key JSON files in GitHub Secrets. Instead, GitHub Actions requests a short-lived OIDC token from GitHub, which Google Cloud exchanges for a short-lived GCP access token based on trust rules configured in this repository.
+## Infrastructure Setup
+Before utilizing the CodeMender workflows, the foundational authentication and repository settings must be established.
 
-## Resources Provisioned
+**1. Google Cloud Configuration (Terraform)**
+This repository automates the creation of a Workload Identity Pool, a GitHub-specific Provider, and a Service Account with the necessary IAM bindings. 
+*   Initialize and apply the Terraform configurations found in this repository to your target GCP project.
+*   For a deeper dive into the mechanics of this setup, reference this [Workload Identity Federation Guide](https://www.firefly.ai/academy/setting-up-workload-identity-federation-between-github-actions-and-google-cloud-platform).
 
-1. **Google Cloud Service Account** (`google_service_account`):
-   - Service account impersonated by GitHub Actions runners.
-2. **Project IAM Role Assignment** (`google_project_iam_member`):
-   - Grants `roles/aiplatform.user` to the service account so it can call Vertex AI / CodeMender backend APIs.
-3. **Workload Identity Pool** (`google_iam_workload_identity_pool`):
-   - Manages identity mappings between GitHub Actions OIDC tokens and GCP identities.
-4. **Workload Identity Provider** (`google_iam_workload_identity_pool_provider`):
-   - Configured with GitHub OIDC issuer (`https://token.actions.githubusercontent.com`).
-   - Attribute Mappings:
-     - `google.subject` = `assertion.sub`
-     - `attribute.repository` = `assertion.repository`
-5. **WIF Service Account Trust Binding** (`google_service_account_iam_member`):
-   - Grants `roles/iam.workloadIdentityUser` to the GitHub repository restricted by `attribute.repository` (default: `nathanielhall/juice-shop`).
+**2. GitHub Repository Secrets**
+Once Terraform has provisioned the infrastructure, the resulting outputs must be mapped to your target repository's secrets (**Settings > Secrets and variables > Actions**):
+*   `WIF_PROVIDER`: The full path of the created WIF provider.
+*   `WIF_SERVICE_ACCOUNT`: The email address of the provisioned GCP Service Account.
 
-## Prerequisites
+**3. GitHub Actions Settings**
+Ensure your target repository is permitted to execute workflows and manage Pull Requests (**Settings > Actions > General**):
+*   **Actions permissions:** Enable "Allow all actions and reusable workflows."
+*   **Workflow permissions:** Enable "Read and write permissions" to allow ChatOps workflows to generate and update PRs.
 
-- [Terraform](https://www.terraform.io/) >= 1.0.0
-- Google Cloud SDK (`gcloud`) installed and authenticated
-- A GCP project with the necessary APIs enabled:
-  - IAM Service Account API (`iam.googleapis.com`)
-  - Security Token Service API (`sts.googleapis.com`)
-  - IAM Credentials API (`iamcredentials.googleapis.com`)
-  - Vertex AI API (`aiplatform.googleapis.com`)
+## Example Workflows
+Once the infrastructure is configured, you can integrate CodeMender CLI using the following reusable starter configurations:
+*   **Basic Scan:** Executes a standard scan, reporting findings and token usage. [View Basic Workflow](https://github.com/nathanielhall/the-most-vulnerable-dotnet-app/blob/main/.github/workflows/codemender_basic_scan.yml)
+*   **ChatOps PR Generator:** Runs a scan and automatically generates an empty Pull Request populated with the identified findings. [View PR Workflow](https://github.com/nathanielhall/the-most-vulnerable-dotnet-app/blob/main/.github/workflows/codemender-findings-pr.yml)
+*   **ChatOps Commands:** Listens for `/verify <ID>` or `/fix <ID>` comments on the generated PR to trigger targeted mitigation tasks. [View ChatOps Workflow](https://github.com/nathanielhall/the-most-vulnerable-dotnet-app/blob/main/.github/workflows/codemender-chatops.yml)
 
-## Usage
+## Current Limitations & Optimization Paths
+These starter workflows are designed for rapid onboarding and dynamic execution, which introduces certain constraints:
+*   **Execution Overhead:** The CLI is currently installed dynamically on each workflow run. This creates latency and is inefficient when scaling against massive repositories.
+*   **Containerization Constraints:** Transitioning to a pre-built container image would optimize runtime performance. However, this future improvement requires careful architectural planning to mitigate nested container execution issues within GitHub Actions.
 
-### 1. Initialize Terraform
-
-```bash
-terraform init
-```
-
-### 2. Plan Infrastructure Deployment
-
-Provide your GCP Project ID when prompted or via a `terraform.tfvars` file:
-
-```bash
-terraform plan -var="project_id=YOUR_GCP_PROJECT_ID"
-```
-
-### 3. Apply Infrastructure Changes
-
-```bash
-terraform apply -var="project_id=YOUR_GCP_PROJECT_ID"
-```
-
-## Inputs
-
-| Name | Description | Type | Default | Required |
-| :--- | :--- | :--- | :--- | :---: |
-| `project_id` | The GCP project ID where WIF resources will be provisioned. | `string` | N/A | **Yes** |
-| `region` | The default GCP region. | `string` | `"us-central1"` | No |
-| `workload_identity_pool_id` | The ID of the Workload Identity Pool. | `string` | `"github-actions-pool"` | No |
-| `workload_identity_provider_id` | The ID of the Workload Identity Pool Provider. | `string` | `"github-actions-provider"` | No |
-| `service_account_id` | The account ID for the Google Cloud Service Account. | `string` | `"codemender-github-sa"` | No |
-| `github_repository` | The GitHub repository allowed to impersonate the service account (`owner/repo`). | `string` | `"nathanielhall/juice-shop"` | No |
-
-## Outputs
-
-| Name | Description |
-| :--- | :--- |
-| `WIF_SERVICE_ACCOUNT` | The email address of the created Service Account. |
-| `WIF_PROVIDER` | The full resource name of the Workload Identity Provider. |
-
-## GitHub Actions Integration
-
-After running `terraform apply`, copy the values from `WIF_SERVICE_ACCOUNT` and `WIF_PROVIDER` into your GitHub repository secrets or environment variables.
-
-Example workflow step using [`google-github-actions/auth`](https://github.com/google-github-actions/auth):
-
-```yaml
-name: CodeMender Pipeline
-
-on:
-  push:
-    branches: [ main ]
-
-jobs:
-  codemender:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write  # Required for requesting the JWT OIDC token
-
-    steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
-
-    - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v2
-      with:
-        workload_identity_provider: '${{ secrets.WIF_PROVIDER }}'
-        service_account: '${{ secrets.WIF_SERVICE_ACCOUNT }}'
-
-    # Subsequent steps now run with authenticated GCP credentials
-```
