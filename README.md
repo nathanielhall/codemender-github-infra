@@ -22,11 +22,11 @@ Ensure your target repository is permitted to execute workflows and manage Pull 
 *   **Actions permissions:** Enable "Allow all actions and reusable workflows."
 *   **Workflow permissions:** Enable "Read and write permissions" to allow ChatOps workflows to generate and update PRs.
 
+
 ## Example Workflows
-Once the infrastructure is configured, you can integrate CodeMender CLI using the following reusable starter configurations:
-*   **Basic Scan:** Executes a standard scan, reporting findings and token usage. [View Basic Workflow](https://github.com/nathanielhall/the-most-vulnerable-dotnet-app/blob/main/.github/workflows/codemender_basic_scan.yml)
-*   **ChatOps PR Generator:** Runs a scan and automatically generates an empty Pull Request populated with the identified findings. [View PR Workflow](https://github.com/nathanielhall/the-most-vulnerable-dotnet-app/blob/main/.github/workflows/codemender-findings-pr.yml)
-*   **ChatOps Commands:** Listens for `/verify <ID>` or `/fix <ID>` comments on the generated PR to trigger targeted mitigation tasks. [View ChatOps Workflow](https://github.com/nathanielhall/the-most-vulnerable-dotnet-app/blob/main/.github/workflows/codemender-chatops.yml)
+This repository includes a curated list of reusable GitHub Actions templates, ranging from basic vulnerability scanning to advanced ChatOps remediation and bulk fixes. 
+
+For a complete list of available templates, their specific triggers, and usage instructions, please see the **[Example Workflows Documentation](./example-workflows/README.md)**.
 
 ## Current Limitations & Optimization Paths
 These starter workflows are designed for rapid onboarding and dynamic execution, which introduces certain constraints:
