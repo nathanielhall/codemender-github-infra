@@ -28,3 +28,6 @@ These examples introduce certain constraints:
 *   **Execution Overhead:** The CLI is currently installed dynamically on each workflow run. This creates latency and is inefficient when scaling against massive repositories.
 *   **Containerization Constraints:** Transitioning to a pre-built container image would optimize runtime performance. NOTE: Must plan to mitigate nested container execution issues. 
 
+## Workflow Usage Examples
+- https://github.com/nathanielhall/the-most-vulnerable-dotnet-app
+- https://github.com/nathanielhall/juice-shop
