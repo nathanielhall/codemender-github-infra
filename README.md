@@ -1,4 +1,5 @@
-# CodeMender CLI GitHub Infrastructure
+# CodeMender + GitHub Actions
+<!-- # CodeMender CLI GitHub Infrastructure -->
 
 ## Overview
 This repository contains the Terraform configurations required to provision Google Cloud Workload Identity Federation (WIF). Its primary purpose is to establish keyless, secure authentication between GitHub Actions and Google Cloud, enabling the automated execution of the CodeMender CLI within target repositories. 
